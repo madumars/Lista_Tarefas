@@ -7,10 +7,12 @@ import android.widget.CheckBox
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import android.graphics.Paint
+import android.graphics.Color
 
 class TarefaAdapter(
     private val lista: MutableList<Tarefa>,
-    private val onClick: (Tarefa) -> Unit
+    private val onClick: (Tarefa) -> Unit,
+    private val onStatusChange: (Tarefa) -> Unit
 ) : RecyclerView.Adapter<TarefaAdapter.TarefaViewHolder>() {
 
     inner class TarefaViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -28,6 +30,9 @@ class TarefaAdapter(
         val tarefa = lista[position]
 
         holder.texto.text = tarefa.descricao
+        
+        // Remove o listener antes de setar o estado para não disparar o evento
+        holder.check.setOnCheckedChangeListener(null)
         holder.check.isChecked = tarefa.concluida
 
         atualizarEstilo(holder, tarefa)
@@ -35,6 +40,8 @@ class TarefaAdapter(
         holder.check.setOnCheckedChangeListener { _, isChecked ->
             tarefa.concluida = isChecked
             atualizarEstilo(holder, tarefa)
+            // Avisa a MainActivity que o status mudou para ela mover o item
+            onStatusChange(tarefa)
         }
 
         holder.itemView.setOnClickListener {
@@ -56,8 +63,10 @@ class TarefaAdapter(
     private fun atualizarEstilo(holder: TarefaViewHolder, tarefa: Tarefa) {
         if (tarefa.concluida) {
             holder.texto.paintFlags = holder.texto.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+            holder.texto.setTextColor(Color.parseColor("#4CAF50"))
         } else {
             holder.texto.paintFlags = holder.texto.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
+            holder.texto.setTextColor(Color.BLACK)
         }
     }
 }

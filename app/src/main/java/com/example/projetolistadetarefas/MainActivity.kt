@@ -2,12 +2,19 @@ package com.example.projetolistadetarefas
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.projetolistadetarefas.api.RetrofitClient
+import com.example.projetolistadetarefas.database.DatabaseHelper
+import com.example.projetolistadetarefas.model.Post
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class MainActivity : AppCompatActivity() {
 
@@ -31,13 +38,11 @@ class MainActivity : AppCompatActivity() {
         recyclerTarefas = findViewById(R.id.recyclerTarefas)
         recyclerConcluidas = findViewById(R.id.recyclerConcluidas)
 
-        // Adapter para tarefas ATIVAS
         adapterAtivas = TarefaAdapter(listaAtivas, 
             onClick = { tarefa -> abrirDetalhes(tarefa) },
             onStatusChange = { tarefa -> moverParaConcluidas(tarefa) }
         )
 
-        // Adapter para tarefas CONCLUÍDAS
         adapterConcluidas = TarefaAdapter(listaConcluidas,
             onClick = { tarefa -> abrirDetalhes(tarefa) },
             onStatusChange = { tarefa -> moverParaAtivas(tarefa) }
@@ -60,6 +65,32 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Digite uma tarefa!", Toast.LENGTH_SHORT).show()
             }
         }
+
+        // CHAMA A API AO INICIAR
+        buscarDadosDaApi()
+    }
+
+    private fun buscarDadosDaApi() {
+        val api = RetrofitClient.instance
+        api.getPosts().enqueue(object : Callback<List<Post>> {
+            override fun onResponse(call: Call<List<Post>>, response: Response<List<Post>>) {
+                if (response.isSuccessful) {
+                    val posts = response.body()
+                    val db = DatabaseHelper(this@MainActivity)
+                    posts?.forEach { post ->
+                        db.insertPost(post.title, post.body)
+                        // Opcional: Adicionar à lista para mostrar na tela
+                        listaAtivas.add(Tarefa(post.title, false))
+                    }
+                    adapterAtivas.notifyDataSetChanged()
+                    Log.d("API", "Dados salvos no banco e carregados na lista")
+                }
+            }
+
+            override fun onFailure(call: Call<List<Post>>, t: Throwable) {
+                Log.e("API_ERROR", t.message ?: "Erro desconhecido")
+            }
+        })
     }
 
     private fun abrirDetalhes(tarefa: Tarefa) {
@@ -73,7 +104,6 @@ class MainActivity : AppCompatActivity() {
         if (index != -1) {
             listaAtivas.removeAt(index)
             adapterAtivas.notifyItemRemoved(index)
-            
             listaConcluidas.add(tarefa)
             adapterConcluidas.notifyItemInserted(listaConcluidas.size - 1)
         }
@@ -84,7 +114,6 @@ class MainActivity : AppCompatActivity() {
         if (index != -1) {
             listaConcluidas.removeAt(index)
             adapterConcluidas.notifyItemRemoved(index)
-            
             listaAtivas.add(tarefa)
             adapterAtivas.notifyItemInserted(listaAtivas.size - 1)
         }

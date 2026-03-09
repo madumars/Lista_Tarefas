@@ -17,7 +17,7 @@ class DetalheActivity : AppCompatActivity() {
         val etTarefa2 = findViewById<EditText>(R.id.etTarefa2)
         val btnSalvar = findViewById<Button>(R.id.btnSalvar)
 
-        // Recebe a descrição que veio da tela anterior
+        // Recebe a descrição que veio da tela anterior(preciso salvar no banco de dados)
         val descricaoOriginal = intent.getStringExtra("descricao")
         //tvDescricao.text = descricaoOriginal
         
